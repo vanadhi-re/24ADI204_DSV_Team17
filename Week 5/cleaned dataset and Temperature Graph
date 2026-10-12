@@ -1,0 +1,68 @@
+#Prepare the cleaned dataset
+clean_df = df.copy()
+
+original_rows = len(clean_df)
+clean_df = clean_df.drop_duplicates()
+
+print("Rows before cleaning:", original_rows)
+print("Rows after removing duplicates:", len(clean_df))
+print("Duplicates removed:", original_rows - len(clean_df))
+
+print("\nRemaining missing values:")
+print(clean_df.isnull().sum())
+
+clean_df.to_csv("Cleaned_Dataset.csv", index=False)
+print("\nCleaned dataset saved.")
+
+#Temperature trend graph
+# Replace these with the actual column names
+DATE_COL = "Date"
+TEMP_COL = "Temperature"
+
+if DATE_COL not in clean_df.columns:
+    raise ValueError(f"Date column not found: {DATE_COL}")
+
+if TEMP_COL not in clean_df.columns:
+    raise ValueError(f"Temperature column not found: {TEMP_COL}")
+
+trend_df = clean_df[[DATE_COL, TEMP_COL]].copy()
+trend_df[DATE_COL] = pd.to_datetime(
+    trend_df[DATE_COL], errors="coerce"
+)
+trend_df[TEMP_COL] = pd.to_numeric(
+    trend_df[TEMP_COL], errors="coerce"
+)
+trend_df = trend_df.dropna()
+
+trend_df = trend_df.sort_values(DATE_COL)
+
+plt.figure(figsize=(12, 5))
+plt.plot(trend_df[DATE_COL], trend_df[TEMP_COL])
+plt.title("Temperature Trend Over Time")
+plt.xlabel("Date")
+plt.ylabel("Temperature (use the dataset's actual unit)")
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig("temperature_trend.png", dpi=300, bbox_inches="tight")
+plt.show()
+
+#Write an audit summary
+audit_summary = {
+    "Total rows after cleaning": len(clean_df),
+    "Total columns": len(clean_df.columns),
+    "Duplicate rows remaining": int(clean_df.duplicated().sum()),
+    "Total missing cells": int(clean_df.isnull().sum().sum()),
+    "Numerical columns": len(
+        clean_df.select_dtypes(include=np.number).columns
+    ),
+    "Categorical columns": len(
+        clean_df.select_dtypes(include=["object", "category"]).columns
+    )
+}
+
+for key, value in audit_summary.items():
+    print(f"{key}: {value}")
+
+with open("Data_Audit_Summary.txt", "w", encoding="utf-8") as f:
+    for key, value in audit_summary.items():
+        f.write(f"{key}: {value}\n")
